@@ -1,16 +1,18 @@
 import os
+import tempfile
 from pathlib import Path
-from typing import Any, Optional, Tuple
+from typing import Any, Tuple
 
 import xlsxwriter
 from dotenv import load_dotenv
 from retry import retry
 from selenium.common.exceptions import ElementNotInteractableException
-from selenium.webdriver import ActionChains, Chrome
+from selenium.webdriver import ActionChains, ChromeOptions
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webdriver import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
+from undetected_chromedriver import Chrome
 
 from testlib.exceptions import VaribleNotSet
 
@@ -94,8 +96,37 @@ def clear_input_safely(input: WebElement, driver: Chrome) -> None:
     input.send_keys(Keys.DELETE)
 
 
-def get_env(key: str) -> Optional[str]:
+def get_env(key: str) -> str:
     value = os.getenv(key)
     if value is None:
         raise VaribleNotSet(f"Varible for {key} is not set")
     return value
+
+
+def get_chrome_with_proxy(options: ChromeOptions, user_agent: str) -> Chrome:
+    """Получение драйвера Хром с проксями"""
+
+    PROXY_HOST = get_env("PROXY_HOST")
+    PROXY_PORT = get_env("PROXY_PORT")
+    PROXY_USER = get_env("PROXY_USER")
+    PROXY_PASS = get_env("PROXY_PASS")
+
+    with open("proxy_config/manifest.json", "r") as f:
+        manifest_json = f.read()
+    with open("proxy_config/background_js.txt", "r") as f:
+        background_js = f.read() % (PROXY_HOST, PROXY_PORT, PROXY_USER, PROXY_PASS)
+
+    with tempfile.TemporaryDirectory() as tmp:
+        temp_manifest = Path(tmp) / "manifest.json"
+        temp_background = Path(tmp) / "background.js"
+        with open(temp_manifest, "w") as f:
+            f.write(manifest_json)
+        with open(temp_background, "w") as f:
+            f.write(background_js)
+        options.add_argument(f"--load-extension={tmp}")
+        options.add_argument(f"--user-agent={user_agent}")
+        options.add_argument("--disable-notifications")
+
+        return Chrome(
+            options=options,
+        )

@@ -1,6 +1,4 @@
 import os
-import tempfile
-from pathlib import Path
 from typing import Any, Generator, Optional
 
 import openai
@@ -14,6 +12,7 @@ from undetected_chromedriver import Chrome
 from testlib.common import (
     click_safely,
     click_safely_or_none,
+    get_chrome_with_proxy,
     get_element_sefely,
     get_env,
     send_keys_safely,
@@ -27,30 +26,16 @@ load_dotenv()
 def chrome_driver() -> Generator[Chrome, Any, Any]:
     """Драйвер хрома"""
 
-    PROXY_HOST = get_env("PROXY_HOST")
-    PROXY_PORT = get_env("PROXY_PORT")
-    PROXY_USER = get_env("PROXY_USER")
-    PROXY_PASS = get_env("PROXY_PASS")
-
-    with open("proxy_config/manifest.json", "r") as f:
-        manifest_json = f.read()
-    with open("proxy_config/background_js.txt", "r") as f:
-        background_js = f.read() % (PROXY_HOST, PROXY_PORT, PROXY_USER, PROXY_PASS)
-
+    options = ChromeOptions()
     user_agent = (
         "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 "
         "(KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
     )
 
-    options = ChromeOptions()
-    with tempfile.TemporaryDirectory() as tmp:
-        temp_manifest = Path(tmp) / "manifest.json"
-        temp_background = Path(tmp) / "background.js"
-        with open(temp_manifest, "w") as f:
-            f.write(manifest_json)
-        with open(temp_background, "w") as f:
-            f.write(background_js)
-        options.add_argument(f"--load-extension={tmp}")
+    PROXY_USE = int(get_env("PROXY_USE"))
+    if PROXY_USE:
+        driver = get_chrome_with_proxy(options, user_agent)
+    else:
         options.add_argument(f"--user-agent={user_agent}")
         options.add_argument("--disable-notifications")
 
