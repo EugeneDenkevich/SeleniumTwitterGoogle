@@ -1,0 +1,43 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: "check-ast" # проверяет, что файлы *.py содержат корректный Python код.
+      - id: "trailing-whitespace" # обрезает лишние пробелы в конце строк.
+      - id: "check-case-conflict" # проверка имён файлов на case конфликты, присущие различным ОС.
+      - id: "end-of-file-fixer" # файлы должны заканчиваться только на перевод корретки.
+      - id: "mixed-line-ending" # окончания строк в файле должны быть одинаковые (LF или CRLF - чего больше, то и будет).
+      - id: "detect-private-key" # в коммите не должно быть private ключа.
+      - id: "check-toml" # проверка синтаксиса toml файлов.
+
+  - repo: https://github.com/asottile/add-trailing-comma
+    rev: v3.1.0
+    hooks:
+      - id: add-trailing-comma # добавление/удаление запятой в конце, там где это нужно.
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.4.3
+    hooks:
+      - id: ruff # запуск ruff для проверки и внесения правок этим форматтером.
+        name: Format code with Ruff
+        entry: poetry run ruff --fix
+        language: python
+        types_or: [python, pyi]
+        pass_filenames: false
+        args:
+          - "tests"
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.10.0
+    hooks:
+      - id: mypy # запуск mypy для проверки типов этим тайпчекером.
+        name: Validate types with MyPy
+        entry: poetry run mypy
+        language: python
+        types_or: [python, pyi]
+        pass_filenames: false
+        args:
+          - "tests"
+        additional_dependencies: [
+          types-retry==0.9.9.4
+        ]
